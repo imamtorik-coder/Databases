@@ -1,0 +1,1326 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0F4C81">
+<title>Database Generus</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --primary: #0F4C81;
+    --primary-light: #1565C0;
+    --primary-pale: #E3F2FD;
+    --secondary: #FFC107;
+    --success: #4CAF50;
+    --danger: #F44336;
+    --warning: #FF9800;
+    --bg: #F8FAFC;
+    --surface: #FFFFFF;
+    --surface2: #F1F5F9;
+    --text: #1A1A2E;
+    --text2: #64748B;
+    --text3: #94A3B8;
+    --border: #E2E8F0;
+    --shadow: 0 2px 12px rgba(15,76,129,0.08);
+    --shadow-md: 0 4px 24px rgba(15,76,129,0.13);
+    --radius: 16px;
+    --radius-sm: 10px;
+    --nav-h: 68px;
+    --header-h: 64px;
+  }
+  [data-theme="dark"] {
+    --bg: #121212;
+    --surface: #1E1E1E;
+    --surface2: #2A2A2A;
+    --text: #F1F5F9;
+    --text2: #94A3B8;
+    --text3: #64748B;
+    --border: #2A2A2A;
+    --shadow: 0 2px 12px rgba(0,0,0,0.3);
+    --shadow-md: 0 4px 24px rgba(0,0,0,0.4);
+    --primary-pale: #1A2744;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { height:100%; overflow:hidden; font-family:'Segoe UI',system-ui,-apple-system,sans-serif; background:var(--bg); color:var(--text); }
+  
+  /* SPLASH */
+  #splash {
+    position:fixed; inset:0; z-index:9999;
+    background: linear-gradient(160deg, #0F4C81 0%, #1565C0 60%, #0D47A1 100%);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:24px;
+    transition: opacity 0.5s ease;
+  }
+  #splash .logo-wrap { display:flex; flex-direction:column; align-items:center; gap:12px; }
+  #splash .logo-icon {
+    width:96px; height:96px; background:rgba(255,255,255,0.15); border-radius:28px;
+    display:flex; align-items:center; justify-content:center; font-size:48px;
+    backdrop-filter:blur(8px); border:2px solid rgba(255,255,255,0.25);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
+  #splash h1 { color:#fff; font-size:22px; font-weight:700; letter-spacing:2px; }
+  #splash h2 { color:#FFC107; font-size:28px; font-weight:800; letter-spacing:1px; }
+  #splash p { color:rgba(255,255,255,0.6); font-size:13px; }
+  .progress-bar { width:200px; height:4px; background:rgba(255,255,255,0.2); border-radius:2px; overflow:hidden; }
+  .progress-fill { height:100%; background:#FFC107; border-radius:2px; animation: prog 2s ease forwards; }
+  @keyframes prog { from{width:0%} to{width:100%} }
+  .dots { display:flex; gap:8px; }
+  .dot { width:8px; height:8px; border-radius:50%; background:rgba(255,255,255,0.4); animation: blink 1.4s infinite; }
+  .dot:nth-child(2){animation-delay:0.2s} .dot:nth-child(3){animation-delay:0.4s}
+  @keyframes blink { 0%,100%{opacity:0.4} 50%{opacity:1} }
+
+  /* APP SHELL */
+  #app { display:flex; flex-direction:column; height:100vh; overflow:hidden; }
+  
+  /* PAGE SYSTEM */
+  .page { display:none; flex-direction:column; flex:1; overflow:hidden; animation: fadeUp 0.3s ease; }
+  .page.active { display:flex; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+  
+  .page-body { flex:1; overflow-y:auto; overflow-x:hidden; padding-bottom:var(--nav-h); }
+  .page-body::-webkit-scrollbar { display:none; }
+
+  /* BOTTOM NAV */
+  #bottom-nav {
+    position:fixed; bottom:0; left:0; right:0; height:var(--nav-h);
+    background:var(--surface); border-top:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-around;
+    z-index:100; padding:0 4px 8px;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.06);
+  }
+  .nav-item {
+    display:flex; flex-direction:column; align-items:center; gap:3px;
+    padding:8px 12px; border-radius:14px; cursor:pointer;
+    transition:all 0.2s; flex:1; min-width:0;
+    border:none; background:transparent; color:var(--text3);
+  }
+  .nav-item .nav-icon { font-size:22px; line-height:1; transition:transform 0.2s; }
+  .nav-item .nav-label { font-size:10px; font-weight:500; white-space:nowrap; }
+  .nav-item.active { color:var(--primary); }
+  .nav-item.active .nav-icon { transform:scale(1.15); }
+  .nav-item.active .nav-label { font-weight:700; }
+
+  /* HEADER */
+  .page-header {
+    background:var(--surface); border-bottom:1px solid var(--border);
+    padding:12px 16px; display:flex; align-items:center; gap:12px;
+    position:sticky; top:0; z-index:10;
+    min-height:var(--header-h);
+  }
+  .page-header h2 { font-size:18px; font-weight:700; flex:1; }
+  .icon-btn {
+    width:40px; height:40px; border-radius:12px; border:none; background:var(--surface2);
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    font-size:18px; color:var(--text); transition:all 0.15s; flex-shrink:0;
+  }
+  .icon-btn:active { transform:scale(0.92); background:var(--border); }
+
+  /* ===== DASHBOARD ===== */
+  .dash-header {
+    background: linear-gradient(135deg, #0F4C81 0%, #1565C0 100%);
+    padding:20px 16px 80px;
+    position:relative;
+  }
+  .dash-header h2 { color:#fff; font-size:20px; font-weight:700; }
+  .dash-header p { color:rgba(255,255,255,0.7); font-size:13px; margin-top:2px; }
+  .dash-header-row { display:flex; align-items:flex-start; justify-content:space-between; }
+  .dash-header-actions { display:flex; gap:8px; }
+  .dash-header .hbtn {
+    width:36px; height:36px; border-radius:10px; background:rgba(255,255,255,0.15);
+    display:flex; align-items:center; justify-content:center; font-size:16px;
+    border:none; cursor:pointer; color:#fff;
+  }
+  .search-bar-wrap { padding:0 16px; margin-top:-24px; position:relative; z-index:2; }
+  .search-bar {
+    background:var(--surface); border-radius:14px; box-shadow:var(--shadow-md);
+    display:flex; align-items:center; gap:10px; padding:12px 14px;
+  }
+  .search-bar input { flex:1; border:none; outline:none; background:transparent; font-size:14px; color:var(--text); }
+  .search-bar input::placeholder { color:var(--text3); }
+
+  /* STAT CARDS */
+  .stat-scroll { display:flex; gap:12px; padding:16px 16px 4px; overflow-x:auto; scrollbar-width:none; }
+  .stat-scroll::-webkit-scrollbar { display:none; }
+  .stat-card {
+    flex-shrink:0; width:120px; background:var(--surface); border-radius:var(--radius);
+    padding:14px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:8px;
+  }
+  .stat-card .s-icon { font-size:28px; }
+  .stat-card .s-num { font-size:26px; font-weight:800; color:var(--primary); }
+  .stat-card .s-label { font-size:11px; color:var(--text2); font-weight:500; }
+  .stat-card.blue .s-num { color:#0F4C81; }
+  .stat-card.amber .s-num { color:#F59E0B; }
+  .stat-card.green .s-num { color:#4CAF50; }
+  .stat-card.purple .s-num { color:#7C3AED; }
+  .stat-card.rose .s-num { color:#E11D48; }
+
+  /* SECTION */
+  .section { padding:16px 16px 8px; }
+  .section-title { font-size:14px; font-weight:700; color:var(--text); margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; }
+  .section-title a { font-size:12px; color:var(--primary); font-weight:600; text-decoration:none; }
+
+  /* CHART CARDS */
+  .chart-card { background:var(--surface); border-radius:var(--radius); padding:16px; box-shadow:var(--shadow); margin-bottom:12px; }
+  .chart-card h4 { font-size:13px; font-weight:700; margin-bottom:4px; }
+  .chart-card .chart-meta { font-size:11px; color:var(--text2); margin-bottom:12px; }
+  .chart-wrap { height:140px; position:relative; }
+
+  /* QUICK ACTIONS */
+  .quick-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .qa-btn {
+    background:var(--surface); border-radius:var(--radius); padding:16px 14px;
+    display:flex; align-items:center; gap:12px; box-shadow:var(--shadow);
+    border:none; cursor:pointer; text-align:left; transition:all 0.15s; color:var(--text);
+  }
+  .qa-btn:active { transform:scale(0.97); box-shadow:none; }
+  .qa-btn .qa-icon { font-size:28px; width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; }
+  .qa-btn h5 { font-size:13px; font-weight:700; }
+  .qa-btn p { font-size:11px; color:var(--text2); margin-top:1px; }
+  .qa-icon.blue { background:#EBF2FF; }
+  .qa-icon.amber { background:#FFF8E1; }
+  .qa-icon.green { background:#E8F5E9; }
+  .qa-icon.purple { background:#F3E5F5; }
+
+  /* SUMMARY CARDS */
+  .summary-row { display:flex; gap:12px; margin-bottom:12px; }
+  .summary-card { flex:1; background:var(--surface); border-radius:var(--radius); padding:14px; box-shadow:var(--shadow); }
+  .summary-card .sm-val { font-size:28px; font-weight:800; color:var(--primary); }
+  .summary-card .sm-label { font-size:11px; color:var(--text2); margin-top:2px; }
+  .badge-good { display:inline-block; background:#E8F5E9; color:#4CAF50; font-size:10px; font-weight:700; padding:2px 8px; border-radius:6px; margin-top:4px; }
+
+  /* ===== GENERUS PAGE ===== */
+  .filter-scroll { display:flex; gap:8px; padding:12px 16px; overflow-x:auto; scrollbar-width:none; }
+  .filter-scroll::-webkit-scrollbar { display:none; }
+  .chip {
+    padding:8px 16px; border-radius:20px; border:1.5px solid var(--border);
+    font-size:12px; font-weight:600; white-space:nowrap; cursor:pointer;
+    background:var(--surface); color:var(--text2); transition:all 0.15s; flex-shrink:0;
+  }
+  .chip.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+  .chip:active { transform:scale(0.96); }
+
+  .generus-list { padding:0 16px 8px; display:flex; flex-direction:column; gap:10px; }
+  .g-card {
+    background:var(--surface); border-radius:var(--radius); padding:14px;
+    display:flex; align-items:center; gap:12px; box-shadow:var(--shadow);
+    transition:all 0.15s; cursor:pointer;
+  }
+  .g-card:active { transform:scale(0.99); box-shadow:none; }
+  .g-avatar {
+    width:48px; height:48px; border-radius:14px; overflow:hidden; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; font-size:20px;
+    font-weight:700; color:#fff;
+  }
+  .g-info { flex:1; min-width:0; }
+  .g-info h4 { font-size:14px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .g-info p { font-size:11px; color:var(--text2); margin-top:2px; }
+  .g-tags { display:flex; gap:6px; margin-top:6px; flex-wrap:wrap; }
+  .tag { display:inline-block; padding:2px 8px; border-radius:6px; font-size:10px; font-weight:700; }
+  .tag.remaja { background:#E3F2FD; color:#0F4C81; }
+  .tag.praremaja { background:#F3E5F5; color:#7C3AED; }
+  .tag.caberawit { background:#FFF3E0; color:#E65100; }
+  .tag.nikah { background:#E8F5E9; color:#2E7D32; }
+  .tag.aktif { background:#E8F5E9; color:#2E7D32; }
+  .tag.nonaktif { background:#FFEBEE; color:#C62828; }
+  .g-menu-btn { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:16px; color:var(--text3); cursor:pointer; flex-shrink:0; border:none; background:transparent; }
+
+  /* ===== FORM ===== */
+  .form-progress { padding:16px 16px 8px; }
+  .progress-steps { display:flex; gap:8px; align-items:center; margin-bottom:16px; }
+  .step-item { display:flex; align-items:center; gap:6px; flex:1; }
+  .step-dot {
+    width:28px; height:28px; border-radius:50%; border:2px solid var(--border);
+    display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700;
+    color:var(--text3); background:var(--surface); flex-shrink:0; transition:all 0.3s;
+  }
+  .step-dot.active { background:var(--primary); border-color:var(--primary); color:#fff; }
+  .step-dot.done { background:var(--success); border-color:var(--success); color:#fff; }
+  .step-line { height:2px; flex:1; background:var(--border); border-radius:1px; transition:all 0.3s; }
+  .step-line.done { background:var(--success); }
+  .step-label { font-size:9px; color:var(--text3); margin-top:3px; text-align:center; font-weight:600; }
+
+  .form-body { padding:0 16px 24px; }
+  .form-section { display:none; }
+  .form-section.active { display:block; animation:fadeUp 0.3s ease; }
+  .form-group { margin-bottom:16px; }
+  .form-label { font-size:12px; font-weight:700; color:var(--text2); margin-bottom:6px; display:block; }
+  .form-label span { color:var(--danger); }
+  .form-input {
+    width:100%; padding:13px 14px; border-radius:12px; border:1.5px solid var(--border);
+    background:var(--surface); color:var(--text); font-size:14px; outline:none;
+    transition:border 0.15s; font-family:inherit;
+  }
+  .form-input:focus { border-color:var(--primary); }
+  .form-input::placeholder { color:var(--text3); }
+  select.form-input { appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; padding-right:36px; }
+  .gender-toggle { display:flex; gap:8px; }
+  .gender-btn { flex:1; padding:13px; border:1.5px solid var(--border); border-radius:12px; background:var(--surface); color:var(--text2); font-size:14px; font-weight:600; cursor:pointer; transition:all 0.15s; text-align:center; }
+  .gender-btn.active { background:var(--primary); border-color:var(--primary); color:#fff; }
+  .photo-upload { width:100%; height:120px; border:2px dashed var(--border); border-radius:14px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; cursor:pointer; color:var(--text3); font-size:13px; }
+  .photo-upload .pu-icon { font-size:32px; }
+  .form-nav { display:flex; gap:10px; padding:16px; border-top:1px solid var(--border); }
+  .btn { padding:14px 24px; border-radius:12px; border:none; font-size:14px; font-weight:700; cursor:pointer; transition:all 0.15s; flex:1; font-family:inherit; }
+  .btn:active { transform:scale(0.97); }
+  .btn-outline { background:var(--surface2); color:var(--text); }
+  .btn-primary { background:var(--primary); color:#fff; }
+  .btn-success { background:var(--success); color:#fff; }
+  .btn-danger { background:var(--danger); color:#fff; }
+
+  /* ===== ABSENSI ===== */
+  .absensi-header { padding:16px; }
+  .select-pertemuan { width:100%; padding:13px 14px; border-radius:12px; border:1.5px solid var(--border); background:var(--surface); color:var(--text); font-size:14px; outline:none; font-family:inherit; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 14px center; padding-right:40px; }
+  .legend-row { display:flex; gap:12px; flex-wrap:wrap; margin-top:12px; }
+  .legend-item { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text2); font-weight:600; }
+  .legend-dot { width:10px; height:10px; border-radius:50%; }
+  
+  .absensi-list { padding:0 16px 8px; display:flex; flex-direction:column; gap:8px; }
+  .ab-card {
+    background:var(--surface); border-radius:var(--radius); padding:12px 14px;
+    display:flex; align-items:center; gap:12px; box-shadow:var(--shadow);
+  }
+  .ab-info { flex:1; min-width:0; }
+  .ab-info h4 { font-size:14px; font-weight:700; }
+  .ab-info p { font-size:11px; color:var(--text2); }
+  .ab-status-btn {
+    width:44px; height:44px; border-radius:12px; border:none; cursor:pointer;
+    font-size:15px; font-weight:800; display:flex; align-items:center; justify-content:center;
+    transition:all 0.15s; flex-shrink:0;
+  }
+  .ab-status-btn:active { transform:scale(0.9); }
+  .st-0 { background:#E2E8F0; color:var(--text3); }
+  .st-1 { background:#4CAF50; color:#fff; }
+  .st-2 { background:#FFC107; color:#fff; }
+  .st-3 { background:#2196F3; color:#fff; }
+  .st-4 { background:#F44336; color:#fff; }
+
+  .ab-summary-bar { background:var(--surface); border-top:1px solid var(--border); padding:12px 16px; position:sticky; bottom:calc(var(--nav-h) + 8px); z-index:5; }
+  .ab-summary-bar .summary-counts { display:flex; gap:16px; justify-content:center; }
+  .ab-count { text-align:center; }
+  .ab-count .val { font-size:20px; font-weight:800; }
+  .ab-count .lbl { font-size:10px; color:var(--text2); font-weight:600; }
+  .ab-count.hadir .val { color:#4CAF50; }
+  .ab-count.izin .val { color:#FFC107; }
+  .ab-count.sakit .val { color:#2196F3; }
+  .ab-count.alpha .val { color:#F44336; }
+  .save-ab-btn { width:100%; padding:13px; border-radius:12px; background:var(--primary); color:#fff; border:none; font-size:14px; font-weight:700; cursor:pointer; margin-top:10px; }
+
+  /* ===== NILAI ===== */
+  .nilai-selector { padding:16px; }
+  .generus-dropdown { position:relative; }
+  .generus-dropdown-btn {
+    width:100%; padding:13px 14px; border-radius:12px; border:1.5px solid var(--border);
+    background:var(--surface); color:var(--text); font-size:14px; text-align:left;
+    cursor:pointer; display:flex; align-items:center; gap:12px; font-family:inherit;
+  }
+  .generus-dropdown-btn .gd-avatar { width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff; font-size:14px; flex-shrink:0; }
+  .generus-dropdown-btn .gd-text { flex:1; text-align:left; }
+  .generus-dropdown-btn h4 { font-size:14px; font-weight:700; }
+  .generus-dropdown-btn p { font-size:11px; color:var(--text2); }
+
+  .materi-list { padding:0 16px; display:flex; flex-direction:column; gap:12px; }
+  .materi-item { background:var(--surface); border-radius:var(--radius); padding:16px; box-shadow:var(--shadow); }
+  .materi-item h4 { font-size:13px; font-weight:700; margin-bottom:10px; }
+  .nilai-input-row { display:flex; align-items:center; gap:12px; }
+  .nilai-slider { flex:1; -webkit-appearance:none; appearance:none; height:6px; border-radius:3px; outline:none; cursor:pointer; }
+  .nilai-slider::-webkit-slider-thumb { -webkit-appearance:none; width:22px; height:22px; border-radius:50%; background:var(--primary); cursor:pointer; box-shadow:0 2px 8px rgba(15,76,129,0.4); }
+  .nilai-num { width:52px; height:40px; border:1.5px solid var(--border); border-radius:10px; background:var(--surface); color:var(--text); font-size:16px; font-weight:800; text-align:center; outline:none; font-family:inherit; }
+  .nilai-bar { height:6px; border-radius:3px; margin-top:8px; transition:all 0.3s; }
+  
+  .nilai-summary { padding:16px; }
+  .nilai-sum-card { background:var(--surface); border-radius:var(--radius); padding:16px; box-shadow:var(--shadow); }
+  .nilai-sum-row { display:flex; gap:12px; }
+  .nilai-sum-item { flex:1; text-align:center; }
+  .nilai-sum-item .val { font-size:32px; font-weight:800; color:var(--primary); }
+  .nilai-sum-item .lbl { font-size:11px; color:var(--text2); font-weight:600; margin-top:2px; }
+  .predikat-badge { display:inline-block; padding:4px 16px; border-radius:20px; font-size:14px; font-weight:800; }
+  .predikat-badge.sb { background:#E8F5E9; color:#2E7D32; }
+  .predikat-badge.b { background:#E3F2FD; color:#0F4C81; }
+  .predikat-badge.c { background:#FFF8E1; color:#F57F17; }
+  .predikat-badge.pb { background:#FFEBEE; color:#C62828; }
+
+  /* ===== RAPOR ===== */
+  .rapor-selector { padding:16px; display:flex; flex-direction:column; gap:12px; }
+  .rapor-card { background:var(--surface); border-radius:var(--radius); padding:16px; box-shadow:var(--shadow); }
+  .rapor-header-row { display:flex; align-items:center; gap:14px; margin-bottom:16px; }
+  .rapor-avatar { width:64px; height:64px; border-radius:18px; display:flex; align-items:center; justify-content:center; font-size:28px; font-weight:800; color:#fff; flex-shrink:0; }
+  .rapor-info h3 { font-size:16px; font-weight:800; }
+  .rapor-info p { font-size:12px; color:var(--text2); margin-top:2px; }
+  .rapor-nilai-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
+  .rapor-stat { background:var(--surface2); border-radius:12px; padding:12px; text-align:center; }
+  .rapor-stat .rs-val { font-size:22px; font-weight:800; color:var(--primary); }
+  .rapor-stat .rs-lbl { font-size:11px; color:var(--text2); font-weight:600; margin-top:2px; }
+  .nilai-detail { margin-bottom:14px; }
+  .nilai-row-item { display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border); }
+  .nilai-row-item:last-child { border-bottom:none; }
+  .nilai-row-item .nm { font-size:13px; color:var(--text2); }
+  .nilai-row-item .nv { font-size:14px; font-weight:700; }
+  .kehadiran-bar-wrap { margin-bottom:14px; }
+  .keh-label { display:flex; justify-content:space-between; font-size:12px; color:var(--text2); margin-bottom:6px; }
+  .keh-bar { height:8px; background:var(--surface2); border-radius:4px; overflow:hidden; }
+  .keh-fill { height:100%; background:var(--success); border-radius:4px; transition:width 0.6s ease; }
+  .rapor-actions { display:flex; gap:10px; }
+  .rapor-btn { flex:1; padding:12px; border-radius:12px; border:none; font-size:12px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; font-family:inherit; }
+  .rapor-btn.primary { background:var(--primary); color:#fff; }
+  .rapor-btn.outline { background:var(--surface2); color:var(--text); }
+
+  /* ===== LAINNYA ===== */
+  .menu-section { padding:16px; }
+  .menu-section h3 { font-size:12px; font-weight:700; color:var(--text3); text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; }
+  .menu-card { background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; margin-bottom:16px; }
+  .menu-item { display:flex; align-items:center; gap:14px; padding:15px 16px; cursor:pointer; transition:background 0.15s; border-bottom:1px solid var(--border); }
+  .menu-item:last-child { border-bottom:none; }
+  .menu-item:active { background:var(--surface2); }
+  .menu-icon { width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+  .menu-text { flex:1; }
+  .menu-text h4 { font-size:14px; font-weight:600; }
+  .menu-text p { font-size:11px; color:var(--text2); margin-top:1px; }
+  .menu-arrow { color:var(--text3); font-size:16px; }
+  .dark-toggle { display:flex; align-items:center; }
+  .toggle-sw { position:relative; width:48px; height:26px; }
+  .toggle-sw input { opacity:0; width:0; height:0; }
+  .toggle-slider { position:absolute; inset:0; background:var(--border); border-radius:13px; cursor:pointer; transition:0.3s; }
+  .toggle-slider:before { content:''; position:absolute; width:20px; height:20px; left:3px; top:3px; background:#fff; border-radius:50%; transition:0.3s; box-shadow:0 1px 4px rgba(0,0,0,0.2); }
+  .toggle-sw input:checked + .toggle-slider { background:var(--primary); }
+  .toggle-sw input:checked + .toggle-slider:before { transform:translateX(22px); }
+  
+  .profile-banner {
+    background: linear-gradient(135deg, #0F4C81, #1565C0);
+    padding:24px 16px; margin-bottom:16px;
+    display:flex; align-items:center; gap:16px;
+  }
+  .profile-ava { width:64px; height:64px; border-radius:18px; background:rgba(255,255,255,0.2); display:flex; align-items:center; justify-content:center; font-size:28px; flex-shrink:0; }
+  .profile-info h3 { color:#fff; font-size:18px; font-weight:700; }
+  .profile-info p { color:rgba(255,255,255,0.7); font-size:13px; margin-top:2px; }
+
+  /* TOAST */
+  #toast {
+    position:fixed; bottom:calc(var(--nav-h) + 16px); left:50%; transform:translateX(-50%) translateY(20px);
+    background:#1A1A2E; color:#fff; padding:12px 20px; border-radius:12px;
+    font-size:13px; font-weight:600; z-index:9998; opacity:0; transition:all 0.3s; white-space:nowrap;
+    display:flex; align-items:center; gap:8px; box-shadow:0 4px 20px rgba(0,0,0,0.3);
+    pointer-events:none;
+  }
+  #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+  /* FAB */
+  .fab {
+    position:fixed; right:16px; bottom:calc(var(--nav-h) + 16px); z-index:50;
+    width:56px; height:56px; border-radius:18px; background:var(--primary); color:#fff;
+    border:none; font-size:28px; cursor:pointer; box-shadow:0 4px 16px rgba(15,76,129,0.4);
+    display:flex; align-items:center; justify-content:center; transition:all 0.2s;
+  }
+  .fab:active { transform:scale(0.9); }
+
+  /* Skeleton */
+  .skeleton { background:linear-gradient(90deg, var(--surface2) 25%, var(--border) 50%, var(--surface2) 75%); background-size:200% 100%; animation:shimmer 1.5s infinite; border-radius:8px; }
+  @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+  /* Responsive */
+  @media (min-width:768px) {
+    .page-body { max-width:430px; margin:0 auto; }
+    #bottom-nav { max-width:430px; left:50%; transform:translateX(-50%); }
+    .fab { right:calc(50% - 215px + 16px); }
+    #toast { bottom:calc(var(--nav-h) + 20px); }
+  }
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="logo-wrap">
+    <div class="logo-icon">🕌</div>
+    <p style="color:rgba(255,255,255,0.6);font-size:12px;letter-spacing:3px;">LDI • UNTUK GENERASI PENERUS</p>
+    <h1>DATABASE</h1>
+    <h2>GENERUS</h2>
+  </div>
+  <div class="progress-bar"><div class="progress-fill"></div></div>
+  <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none">
+
+  <!-- DASHBOARD PAGE -->
+  <div class="page active" id="page-dashboard">
+    <div class="page-body">
+      <div class="dash-header">
+        <div class="dash-header-row">
+          <div>
+            <h2>Halo Pengurus 👋</h2>
+            <p id="dash-date"></p>
+          </div>
+          <div class="dash-header-actions">
+            <button class="hbtn" onclick="showToast('🔔 Tidak ada notifikasi baru')">🔔</button>
+            <button class="hbtn" style="background:rgba(255,193,7,0.2)">👤</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="search-bar-wrap">
+        <div class="search-bar">
+          <span>🔍</span>
+          <input type="text" placeholder="Cari generus..." oninput="dashSearch(this.value)">
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="section">
+        <div class="section-title">Statistik Generus</div>
+      </div>
+      <div class="stat-scroll">
+        <div class="stat-card blue"><span class="s-icon">👥</span><div class="s-num">128</div><div class="s-label">Total Generus</div></div>
+        <div class="stat-card amber"><span class="s-icon">👦</span><div class="s-num">32</div><div class="s-label">Caberawit</div></div>
+        <div class="stat-card purple"><span class="s-icon">🧑</span><div class="s-num">28</div><div class="s-label">Praremaja</div></div>
+        <div class="stat-card green"><span class="s-icon">👨</span><div class="s-num">48</div><div class="s-label">Remaja</div></div>
+        <div class="stat-card rose"><span class="s-icon">💍</span><div class="s-num">20</div><div class="s-label">Sudah Nikah</div></div>
+      </div>
+
+      <!-- Ringkasan Semester -->
+      <div class="section">
+        <div class="section-title">Ringkasan Semester Genap 2024 <a href="#">Lihat Detail ›</a></div>
+        <div class="summary-row">
+          <div class="summary-card">
+            <div class="sm-val">86%</div>
+            <div class="sm-label">Rata-rata Kehadiran</div>
+            <div class="badge-good">Baik</div>
+          </div>
+          <div class="summary-card">
+            <div class="sm-val">82</div>
+            <div class="sm-label">Rata-rata Nilai</div>
+            <div class="badge-good">Baik</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="section">
+        <div class="section-title">Grafik Kehadiran</div>
+        <div class="chart-card">
+          <div class="chart-meta">Semester Genap 2024 • Pertemuan P1–P24</div>
+          <div class="chart-wrap"><canvas id="chartKehadiran"></canvas></div>
+        </div>
+        <div class="section-title">Komposisi Golongan</div>
+        <div class="chart-card">
+          <div class="chart-wrap" style="height:160px"><canvas id="chartGolongan"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="section">
+        <div class="section-title">Quick Action</div>
+        <div class="quick-grid">
+          <button class="qa-btn" onclick="goPage('generus'); setTimeout(()=>openAddForm(),300)">
+            <div class="qa-icon blue">➕</div>
+            <div><h5>Tambah Generus</h5><p>Daftarkan anggota baru</p></div>
+          </button>
+          <button class="qa-btn" onclick="goPage('absensi')">
+            <div class="qa-icon amber">📅</div>
+            <div><h5>Input Absensi</h5><p>Catat kehadiran hari ini</p></div>
+          </button>
+          <button class="qa-btn" onclick="goPage('nilai')">
+            <div class="qa-icon green">📝</div>
+            <div><h5>Input Nilai</h5><p>Masukkan nilai materi</p></div>
+          </button>
+          <button class="qa-btn" onclick="goPage('rapor')">
+            <div class="qa-icon purple">📄</div>
+            <div><h5>Cetak Rapor</h5><p>Unduh atau cetak rapor</p></div>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GENERUS PAGE -->
+  <div class="page" id="page-generus">
+    <div class="page-header">
+      <h2>Data Generus</h2>
+      <button class="icon-btn" onclick="openAddForm()">➕</button>
+    </div>
+    <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;">
+      <div class="search-bar" style="box-shadow:none;border:1.5px solid var(--border);">
+        <span>🔍</span>
+        <input type="text" placeholder="Cari nama atau ID generus..." oninput="filterGenerus(this.value)" id="generus-search">
+      </div>
+    </div>
+    <div class="filter-scroll">
+      <button class="chip active" onclick="setFilter(this,'semua')">Semua</button>
+      <button class="chip" onclick="setFilter(this,'caberawit')">Caberawit</button>
+      <button class="chip" onclick="setFilter(this,'praremaja')">Praremaja</button>
+      <button class="chip" onclick="setFilter(this,'remaja')">Remaja</button>
+      <button class="chip" onclick="setFilter(this,'nikah')">Nikah</button>
+      <button class="chip" onclick="setFilter(this,'aktif')">Aktif</button>
+      <button class="chip" onclick="setFilter(this,'nonaktif')">Tidak Aktif</button>
+    </div>
+    <div class="page-body" style="padding-top:0">
+      <div class="generus-list" id="generus-list"></div>
+    </div>
+  </div>
+
+  <!-- ADD GENERUS FORM PAGE -->
+  <div class="page" id="page-form">
+    <div class="page-header">
+      <button class="icon-btn" onclick="goPage('generus')">←</button>
+      <h2>Tambah Generus</h2>
+    </div>
+    <div class="page-body" style="padding-top:0">
+      <div class="form-progress">
+        <div class="progress-steps">
+          <div class="step-item">
+            <div><div class="step-dot active" id="sd1">1</div><div class="step-label">Data Diri</div></div>
+          </div>
+          <div class="step-line" id="sl1"></div>
+          <div class="step-item">
+            <div><div class="step-dot" id="sd2">2</div><div class="step-label">Orang Tua</div></div>
+          </div>
+          <div class="step-line" id="sl2"></div>
+          <div class="step-item">
+            <div><div class="step-dot" id="sd3">3</div><div class="step-label">Pendidikan</div></div>
+          </div>
+          <div class="step-line" id="sl3"></div>
+          <div class="step-item">
+            <div><div class="step-dot" id="sd4">4</div><div class="step-label">Konfirmasi</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-body">
+        <!-- Step 1 -->
+        <div class="form-section active" id="fs1">
+          <div class="form-group">
+            <div class="photo-upload" onclick="showToast('📷 Kamera / Galeri')">
+              <div class="pu-icon">📷</div>
+              <div>Tambah Foto Profil</div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nama Lengkap <span>*</span></label>
+            <input class="form-input" type="text" placeholder="Masukkan nama lengkap">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Jenis Kelamin <span>*</span></label>
+            <div class="gender-toggle">
+              <button class="gender-btn active" onclick="toggleGender(this)">👦 Laki-laki</button>
+              <button class="gender-btn" onclick="toggleGender(this)">👧 Perempuan</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tempat Lahir <span>*</span></label>
+            <input class="form-input" type="text" placeholder="Masukkan tempat lahir">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tanggal Lahir <span>*</span></label>
+            <input class="form-input" type="date">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Golongan <span>*</span></label>
+            <select class="form-input">
+              <option value="">Pilih golongan</option>
+              <option>Caberawit (Usia 5-9)</option>
+              <option>Praremaja (Usia 10-13)</option>
+              <option>Remaja (Usia 14-17)</option>
+              <option>Sudah Nikah</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="form-section" id="fs2">
+          <div class="form-group">
+            <label class="form-label">Nama Ayah</label>
+            <input class="form-input" type="text" placeholder="Masukkan nama ayah">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nama Ibu</label>
+            <input class="form-input" type="text" placeholder="Masukkan nama ibu">
+          </div>
+          <div class="form-group">
+            <label class="form-label">No. HP Orang Tua</label>
+            <input class="form-input" type="tel" placeholder="08xxxxxxxxxx">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Alamat Rumah</label>
+            <textarea class="form-input" rows="3" placeholder="Masukkan alamat lengkap" style="resize:none"></textarea>
+          </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="form-section" id="fs3">
+          <div class="form-group">
+            <label class="form-label">Nama Sekolah</label>
+            <input class="form-input" type="text" placeholder="Masukkan nama sekolah">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Kelas</label>
+            <input class="form-input" type="text" placeholder="Contoh: 7A, X IPA 1">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tahun Masuk Generus</label>
+            <select class="form-input">
+              <option>2024</option><option>2023</option><option>2022</option><option>2021</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Status</label>
+            <select class="form-input">
+              <option>Aktif</option><option>Tidak Aktif</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="form-section" id="fs4">
+          <div style="background:var(--primary-pale);border-radius:var(--radius);padding:16px;margin-bottom:16px;">
+            <h4 style="font-size:14px;font-weight:700;margin-bottom:12px;color:var(--primary)">✅ Konfirmasi Data</h4>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:var(--text2)">Nama</span><strong>Ahmad Fauzi</strong></div>
+              <div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:var(--text2)">Golongan</span><strong>Remaja</strong></div>
+              <div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:var(--text2)">Tgl Lahir</span><strong>15 Mar 2008</strong></div>
+              <div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:var(--text2)">Orang Tua</span><strong>Budi / Siti</strong></div>
+              <div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:var(--text2)">Sekolah</span><strong>SMP Negeri 1</strong></div>
+            </div>
+          </div>
+          <p style="font-size:12px;color:var(--text2);text-align:center;line-height:1.6">Pastikan semua data sudah benar sebelum menyimpan. ID generus akan digenerate otomatis setelah disimpan.</p>
+        </div>
+      </div>
+    </div>
+    <div class="form-nav">
+      <button class="btn btn-outline" id="btn-back" onclick="formStep(-1)">← Kembali</button>
+      <button class="btn btn-primary" id="btn-next" onclick="formStep(1)">Selanjutnya →</button>
+    </div>
+  </div>
+
+  <!-- ABSENSI PAGE -->
+  <div class="page" id="page-absensi">
+    <div class="page-header">
+      <h2>Absensi</h2>
+      <button class="icon-btn" onclick="showToast('📊 Rekap absensi')">📊</button>
+    </div>
+    <div class="page-body" style="padding-top:0">
+      <div class="absensi-header">
+        <select class="select-pertemuan" id="pertemuan-select" onchange="updatePertemuan()">
+          <option>Pertemuan ke-1</option>
+          <option>Pertemuan ke-2</option>
+          <option>Pertemuan ke-3</option>
+          <option selected>Pertemuan ke-4</option>
+          <option>Pertemuan ke-5</option>
+          <option>Pertemuan ke-6</option>
+          <option>Pertemuan ke-12</option>
+          <option>Pertemuan ke-18</option>
+          <option>Pertemuan ke-24</option>
+        </select>
+        <div class="legend-row">
+          <div class="legend-item"><div class="legend-dot" style="background:#4CAF50"></div>Hadir (H)</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#FFC107"></div>Izin (I)</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#2196F3"></div>Sakit (S)</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#F44336"></div>Alpha (A)</div>
+        </div>
+        <p style="font-size:11px;color:var(--text3);margin-top:8px;">💡 Ketuk nama untuk ganti status. Ketuk berulang untuk siklus H→I→S→A</p>
+      </div>
+      <div class="absensi-list" id="absensi-list"></div>
+      <div style="height:130px"></div>
+    </div>
+    <div style="position:fixed;bottom:var(--nav-h);left:0;right:0;background:var(--surface);border-top:1px solid var(--border);padding:12px 16px;z-index:10">
+      <div class="summary-counts" id="ab-counts" style="display:flex;gap:16px;justify-content:center;margin-bottom:10px"></div>
+      <button class="save-ab-btn" onclick="saveAbsensi()">💾 Simpan Absensi</button>
+    </div>
+  </div>
+
+  <!-- NILAI PAGE -->
+  <div class="page" id="page-nilai">
+    <div class="page-header">
+      <h2>Nilai Materi</h2>
+      <button class="icon-btn" onclick="showToast('📋 Riwayat nilai')">📋</button>
+    </div>
+    <div class="page-body" style="padding-top:0">
+      <div class="nilai-selector">
+        <label class="form-label" style="margin-bottom:8px">Pilih Generus</label>
+        <button class="generus-dropdown-btn" onclick="cycleNilaiGenerus()">
+          <div class="gd-avatar" id="nilai-ava" style="background:#0F4C81">AF</div>
+          <div class="gd-text">
+            <h4 id="nilai-name">Ahmad Fauzi</h4>
+            <p id="nilai-id">JB-PA1-RM-0001 • Remaja</p>
+          </div>
+          <span style="color:var(--text3)">⌄</span>
+        </button>
+      </div>
+
+      <div class="section" style="padding-top:0">
+        <div class="section-title">Daftar Materi</div>
+      </div>
+      <div class="materi-list" id="materi-list"></div>
+
+      <div class="nilai-summary">
+        <div class="nilai-sum-card">
+          <h4 style="font-size:13px;font-weight:700;margin-bottom:14px;">Ringkasan</h4>
+          <div class="nilai-sum-row">
+            <div class="nilai-sum-item">
+              <div class="val" id="avg-nilai">83</div>
+              <div class="lbl">Rata-rata Nilai</div>
+            </div>
+            <div class="nilai-sum-item">
+              <div id="predikat-badge" class="predikat-badge b">Baik</div>
+              <div class="lbl" style="margin-top:8px">Predikat</div>
+            </div>
+          </div>
+          <div style="margin-top:16px">
+            <button class="btn btn-primary" style="width:100%" onclick="saveNilai()">💾 Simpan Nilai</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RAPOR PAGE -->
+  <div class="page" id="page-rapor">
+    <div class="page-header">
+      <h2>Rapor Semester</h2>
+    </div>
+    <div class="page-body" style="padding-top:0">
+      <div class="rapor-selector">
+        <div style="display:flex;gap:10px">
+          <select class="form-input" style="flex:1">
+            <option>Semester Genap 2024</option>
+            <option>Semester Ganjil 2023</option>
+          </select>
+          <button class="icon-btn" onclick="showToast('🔍 Filter generus')">🔍</button>
+        </div>
+        <div id="rapor-cards"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LAINNYA PAGE -->
+  <div class="page" id="page-lainnya">
+    <div class="page-body">
+      <div class="profile-banner">
+        <div class="profile-ava">👨‍💼</div>
+        <div class="profile-info">
+          <h3>Admin PA1</h3>
+          <p>Pengurus Utama • Kelompok PA1</p>
+        </div>
+      </div>
+
+      <div class="menu-section">
+        <h3>Pengaturan</h3>
+        <div class="menu-card">
+          <div class="menu-item" onclick="showToast('👤 Profil Kelompok')">
+            <div class="menu-icon" style="background:#E3F2FD">👥</div>
+            <div class="menu-text"><h4>Profil Kelompok</h4><p>Info dan pengaturan kelompok</p></div>
+            <span class="menu-arrow">›</span>
+          </div>
+          <div class="menu-item">
+            <div class="menu-icon" style="background:#E8F5E9">🌙</div>
+            <div class="menu-text"><h4>Mode Gelap</h4><p>Sesuaikan tampilan</p></div>
+            <label class="toggle-sw dark-toggle">
+              <input type="checkbox" id="dark-toggle" onchange="toggleDark(this)">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="menu-item" onclick="showToast('🔔 Pengaturan notifikasi')">
+            <div class="menu-icon" style="background:#FFF8E1">🔔</div>
+            <div class="menu-text"><h4>Pengaturan Aplikasi</h4><p>Notifikasi, bahasa, dll</p></div>
+            <span class="menu-arrow">›</span>
+          </div>
+        </div>
+
+        <h3>Data</h3>
+        <div class="menu-card">
+          <div class="menu-item" onclick="showToast('💾 Backup data...')">
+            <div class="menu-icon" style="background:#E8F5E9">💾</div>
+            <div class="menu-text"><h4>Backup Data</h4><p>Simpan data ke penyimpanan</p></div>
+            <span class="menu-arrow">›</span>
+          </div>
+          <div class="menu-item" onclick="showToast('📥 Restore data...')">
+            <div class="menu-icon" style="background:#E3F2FD">📥</div>
+            <div class="menu-text"><h4>Restore Data</h4><p>Pulihkan data dari backup</p></div>
+            <span class="menu-arrow">›</span>
+          </div>
+          <div class="menu-item" onclick="showToast('📊 Export ke Excel...')">
+            <div class="menu-icon" style="background:#F3E5F5">📊</div>
+            <div class="menu-text"><h4>Export Excel</h4><p>Unduh data dalam format xlsx</p></div>
+            <span class="menu-arrow">›</span>
+          </div>
+          <div class="menu-item" onclick="showToast('🖨 Cetak semua rapor...')">
+            <div class="menu-icon" style="background:#FFF8E1">🖨</div>
+            <div class="menu-text"><h4>Cetak Semua Rapor</h4><p>Rapor seluruh generus</p></div>
+            <span class="menu-arrow">›</span>
+          </div>
+        </div>
+
+        <h3>Lainnya</h3>
+        <div class="menu-card">
+          <div class="menu-item" onclick="showToast('❓ Panduan penggunaan')">
+            <div class="menu-icon" style="background:#E8F5E9">❓</div>
+            <div class="menu-text"><h4>Bantuan</h4><p>Panduan penggunaan aplikasi</p></div>
+            <span class="menu-arrow">›</span>
+          </div>
+          <div class="menu-item" onclick="showToast('ℹ️ Database Generus v2.0')">
+            <div class="menu-icon" style="background:#E3F2FD">ℹ️</div>
+            <div class="menu-text"><h4>Tentang Aplikasi</h4><p>Versi 2.0 • LDI 2024</p></div>
+            <span class="menu-arrow">›</span>
+          </div>
+          <div class="menu-item" style="color:var(--danger)" onclick="showToast('👋 Sampai jumpa!')">
+            <div class="menu-icon" style="background:#FFEBEE">🚪</div>
+            <div class="menu-text"><h4 style="color:var(--danger)">Keluar Aplikasi</h4><p>Logout dari akun ini</p></div>
+            <span class="menu-arrow" style="color:var(--danger)">›</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <nav id="bottom-nav">
+    <button class="nav-item active" data-page="dashboard" onclick="goPage('dashboard')">
+      <span class="nav-icon">🏠</span><span class="nav-label">Dashboard</span>
+    </button>
+    <button class="nav-item" data-page="generus" onclick="goPage('generus')">
+      <span class="nav-icon">👥</span><span class="nav-label">Generus</span>
+    </button>
+    <button class="nav-item" data-page="absensi" onclick="goPage('absensi')">
+      <span class="nav-icon">📅</span><span class="nav-label">Absensi</span>
+    </button>
+    <button class="nav-item" data-page="nilai" onclick="goPage('nilai')">
+      <span class="nav-icon">📝</span><span class="nav-label">Nilai</span>
+    </button>
+    <button class="nav-item" data-page="rapor" onclick="goPage('rapor')">
+      <span class="nav-icon">📄</span><span class="nav-label">Rapor</span>
+    </button>
+    <button class="nav-item" data-page="lainnya" onclick="goPage('lainnya')">
+      <span class="nav-icon">⚙️</span><span class="nav-label">Lainnya</span>
+    </button>
+  </nav>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+// ============ DATA ============
+const GENERUS_DATA = [
+  {id:'JB-PA1-RM-0001',nama:'Ahmad Fauzi',golongan:'remaja',status:'aktif',inisial:'AF',warna:'#0F4C81'},
+  {id:'JB-PA1-PR-0002',nama:'Aisyah Zahra',golongan:'praremaja',status:'aktif',inisial:'AZ',warna:'#7C3AED'},
+  {id:'JB-PA1-RM-0003',nama:'Rizky Maulana',golongan:'remaja',status:'aktif',inisial:'RM',warna:'#0F4C81'},
+  {id:'JB-PA1-PR-0004',nama:'Siti Nurhaliza',golongan:'praremaja',status:'aktif',inisial:'SN',warna:'#7C3AED'},
+  {id:'JB-PA1-RM-0005',nama:'Fadhlan Arif',golongan:'remaja',status:'aktif',inisial:'FA',warna:'#0F4C81'},
+  {id:'JB-PA1-CA-0006',nama:'Nabila Putri',golongan:'caberawit',status:'aktif',inisial:'NP',warna:'#E65100'},
+  {id:'JB-PA1-NK-0007',nama:'Budi Santoso',golongan:'nikah',status:'aktif',inisial:'BS',warna:'#2E7D32'},
+  {id:'JB-PA1-RM-0008',nama:'Dina Fitria',golongan:'remaja',status:'nonaktif',inisial:'DF',warna:'#64748B'},
+  {id:'JB-PA1-CA-0009',nama:'Rafi Ahmad',golongan:'caberawit',status:'aktif',inisial:'RA',warna:'#E65100'},
+  {id:'JB-PA1-PR-0010',nama:'Laila Khairunisa',golongan:'praremaja',status:'aktif',inisial:'LK',warna:'#7C3AED'},
+];
+
+const MATERI_DATA = [
+  {nama:'Alim Fakih',nilai:85},
+  {nama:'Berakhlakul Karimah',nilai:90},
+  {nama:'Mandiri',nilai:80},
+  {nama:'29 Karakter Luhur',nilai:88},
+  {nama:'Materi Keagamaan',nilai:75},
+];
+
+let currentFilter = 'semua';
+let filterQuery = '';
+let absensiStatus = {}; // id -> 0..4
+let materi = [...MATERI_DATA];
+let currentStep = 1;
+const totalSteps = 4;
+let nilaiIdx = 0;
+
+// ============ SPLASH ============
+window.addEventListener('load', () => {
+  // Set date
+  const d = new Date();
+  document.getElementById('dash-date').textContent = d.toLocaleDateString('id-ID',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+  setTimeout(() => {
+    const splash = document.getElementById('splash');
+    splash.style.opacity = '0';
+    setTimeout(() => {
+      splash.style.display = 'none';
+      document.getElementById('app').style.display = 'flex';
+      initApp();
+    }, 500);
+  }, 2200);
+});
+
+function initApp() {
+  renderGenerusList(GENERUS_DATA);
+  initAbsensi();
+  initNilai();
+  initRapor();
+  renderCharts();
+  // Restore dark mode
+  if(localStorage.getItem('darkMode') === '1') {
+    document.documentElement.setAttribute('data-theme','dark');
+    document.getElementById('dark-toggle').checked = true;
+  }
+}
+
+// ============ NAVIGATION ============
+function goPage(page) {
+  // Special pages that shouldn't update bottom nav
+  const mainPages = ['dashboard','generus','absensi','nilai','rapor','lainnya'];
+  
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  
+  if(mainPages.includes(page)) {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.querySelector(`[data-page="${page}"]`)?.classList.add('active');
+  }
+}
+
+function openAddForm() {
+  currentStep = 1;
+  updateFormStep();
+  goPage('form');
+}
+
+// ============ TOAST ============
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ============ DARK MODE ============
+function toggleDark(el) {
+  if(el.checked) {
+    document.documentElement.setAttribute('data-theme','dark');
+    localStorage.setItem('darkMode','1');
+    showToast('🌙 Mode gelap aktif');
+  } else {
+    document.documentElement.removeAttribute('data-theme');
+    localStorage.setItem('darkMode','0');
+    showToast('☀️ Mode terang aktif');
+  }
+}
+
+// ============ CHARTS ============
+function renderCharts() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const gridColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)';
+
+  // Kehadiran
+  const kCtx = document.getElementById('chartKehadiran').getContext('2d');
+  new Chart(kCtx, {
+    type:'bar',
+    data:{
+      labels:['P1','P4','P8','P12','P16','P20','P24'],
+      datasets:[{
+        label:'Kehadiran (%)',
+        data:[88,92,85,90,87,84,89],
+        backgroundColor:'rgba(15,76,129,0.7)',
+        borderRadius:6,
+        borderSkipped:false,
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        y:{min:0,max:100,grid:{color:gridColor},ticks:{font:{size:10},color:'#64748B'}},
+        x:{grid:{display:false},ticks:{font:{size:10},color:'#64748B'}}
+      }
+    }
+  });
+
+  // Golongan
+  const gCtx = document.getElementById('chartGolongan').getContext('2d');
+  new Chart(gCtx, {
+    type:'doughnut',
+    data:{
+      labels:['Caberawit','Praremaja','Remaja','Nikah'],
+      datasets:[{data:[32,28,48,20],backgroundColor:['#FF9800','#7C3AED','#0F4C81','#4CAF50'],borderWidth:0,hoverOffset:8}]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:16}}}
+    }
+  });
+}
+
+function dashSearch(q) {
+  if(q.length > 0) {
+    showToast(`🔍 Mencari "${q}"...`);
+  }
+}
+
+// ============ GENERUS LIST ============
+function renderGenerusList(data) {
+  const list = document.getElementById('generus-list');
+  if(!data.length) {
+    list.innerHTML = '<div style="text-align:center;padding:48px 16px;color:var(--text3)"><div style="font-size:48px;margin-bottom:12px">😔</div><p>Tidak ada generus ditemukan</p></div>';
+    return;
+  }
+  list.innerHTML = data.map(g => `
+    <div class="g-card" onclick="showToast('👤 Detail: ${g.nama}')">
+      <div class="g-avatar" style="background:${g.warna}">${g.inisial}</div>
+      <div class="g-info">
+        <h4>${g.nama}</h4>
+        <p>${g.id}</p>
+        <div class="g-tags">
+          <span class="tag ${g.golongan}">${capitalize(g.golongan)}</span>
+          <span class="tag ${g.status}">${g.status === 'aktif' ? 'Aktif' : 'Non Aktif'}</span>
+        </div>
+      </div>
+      <button class="g-menu-btn" onclick="event.stopPropagation();showMenu('${g.id}','${g.nama}')">⋮</button>
+    </div>
+  `).join('');
+}
+
+function showMenu(id, nama) {
+  const actions = ['✏️ Edit Data','🗑️ Hapus','📄 Cetak Rapor','📤 Bagikan'];
+  showToast(`${nama}: ${actions[Math.floor(Math.random()*actions.length)]}`);
+}
+
+function capitalize(s) { return s.charAt(0).toUpperCase()+s.slice(1); }
+
+function setFilter(el, filter) {
+  document.querySelectorAll('.filter-scroll .chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  currentFilter = filter;
+  applyFilter();
+}
+
+function filterGenerus(q) {
+  filterQuery = q.toLowerCase();
+  applyFilter();
+}
+
+function applyFilter() {
+  let data = GENERUS_DATA;
+  if(currentFilter !== 'semua') {
+    if(currentFilter === 'aktif' || currentFilter === 'nonaktif') {
+      data = data.filter(g => g.status === currentFilter);
+    } else {
+      data = data.filter(g => g.golongan === currentFilter);
+    }
+  }
+  if(filterQuery) {
+    data = data.filter(g => g.nama.toLowerCase().includes(filterQuery) || g.id.toLowerCase().includes(filterQuery));
+  }
+  renderGenerusList(data);
+}
+
+// ============ FORM STEPS ============
+function formStep(dir) {
+  const next = currentStep + dir;
+  if(next < 1 || next > totalSteps) {
+    if(next > totalSteps) {
+      showToast('✅ Data berhasil disimpan!');
+      goPage('generus');
+    }
+    return;
+  }
+  currentStep = next;
+  updateFormStep();
+}
+
+function updateFormStep() {
+  for(let i=1;i<=totalSteps;i++) {
+    document.getElementById('fs'+i).classList.toggle('active', i===currentStep);
+    const dot = document.getElementById('sd'+i);
+    if(i < currentStep) { dot.className='step-dot done'; dot.textContent='✓'; }
+    else if(i === currentStep) { dot.className='step-dot active'; dot.textContent=i; }
+    else { dot.className='step-dot'; dot.textContent=i; }
+    if(i < totalSteps) {
+      document.getElementById('sl'+i).classList.toggle('done', i < currentStep);
+    }
+  }
+  const backBtn = document.getElementById('btn-back');
+  const nextBtn = document.getElementById('btn-next');
+  backBtn.style.display = currentStep === 1 ? 'none' : 'block';
+  if(currentStep === totalSteps) {
+    nextBtn.textContent = '✅ Simpan Data';
+    nextBtn.className = 'btn btn-success';
+  } else {
+    nextBtn.textContent = 'Selanjutnya →';
+    nextBtn.className = 'btn btn-primary';
+  }
+}
+
+function toggleGender(el) {
+  el.parentElement.querySelectorAll('.gender-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// ============ ABSENSI ============
+const STATUS_LABELS = ['—','H','I','S','A'];
+const STATUS_CLASSES = ['st-0','st-1','st-2','st-3','st-4'];
+
+function initAbsensi() {
+  GENERUS_DATA.forEach(g => { absensiStatus[g.id] = 0; });
+  renderAbsensiList();
+}
+
+function renderAbsensiList() {
+  const list = document.getElementById('absensi-list');
+  list.innerHTML = GENERUS_DATA.map(g => `
+    <div class="ab-card">
+      <div class="g-avatar" style="background:${g.warna};width:40px;height:40px;border-radius:10px;font-size:14px">${g.inisial}</div>
+      <div class="ab-info">
+        <h4>${g.nama}</h4>
+        <p>${g.id}</p>
+      </div>
+      <button class="ab-status-btn ${STATUS_CLASSES[absensiStatus[g.id]]}" 
+        id="ab-${g.id}" onclick="cycleAbsensi('${g.id}')">
+        ${STATUS_LABELS[absensiStatus[g.id]] || '—'}
+      </button>
+    </div>
+  `).join('');
+  updateAbCounts();
+}
+
+function cycleAbsensi(id) {
+  absensiStatus[id] = (absensiStatus[id] + 1) % 5;
+  const btn = document.getElementById('ab-'+id);
+  btn.className = `ab-status-btn ${STATUS_CLASSES[absensiStatus[id]]}`;
+  btn.textContent = STATUS_LABELS[absensiStatus[id]] || '—';
+  updateAbCounts();
+}
+
+function updateAbCounts() {
+  const counts = {hadir:0,izin:0,sakit:0,alpha:0};
+  Object.values(absensiStatus).forEach(s => {
+    if(s===1) counts.hadir++;
+    else if(s===2) counts.izin++;
+    else if(s===3) counts.sakit++;
+    else if(s===4) counts.alpha++;
+  });
+  document.getElementById('ab-counts').innerHTML = `
+    <div class="ab-count hadir"><div class="val">${counts.hadir}</div><div class="lbl">Hadir</div></div>
+    <div class="ab-count izin"><div class="val">${counts.izin}</div><div class="lbl">Izin</div></div>
+    <div class="ab-count sakit"><div class="val">${counts.sakit}</div><div class="lbl">Sakit</div></div>
+    <div class="ab-count alpha"><div class="val">${counts.alpha}</div><div class="lbl">Alpha</div></div>
+  `;
+}
+
+function updatePertemuan() {
+  GENERUS_DATA.forEach(g => { absensiStatus[g.id] = 0; });
+  renderAbsensiList();
+  showToast('📅 Absensi direset untuk pertemuan baru');
+}
+
+function saveAbsensi() {
+  showToast('✅ Absensi berhasil disimpan!');
+}
+
+// ============ NILAI ============
+function initNilai() {
+  materi = [...MATERI_DATA];
+  renderMateriList();
+}
+
+function renderMateriList() {
+  const list = document.getElementById('materi-list');
+  list.innerHTML = materi.map((m,i) => `
+    <div class="materi-item">
+      <h4>${m.nama}</h4>
+      <div class="nilai-input-row">
+        <input type="range" class="nilai-slider" min="0" max="100" value="${m.nilai}"
+          oninput="updateNilai(${i},this.value)"
+          style="background:linear-gradient(to right, ${getNilaiColor(m.nilai)} ${m.nilai}%, var(--border) ${m.nilai}%)">
+        <input type="number" class="nilai-num" min="0" max="100" value="${m.nilai}"
+          oninput="updateNilai(${i},this.value,true)">
+      </div>
+      <div class="nilai-bar" style="width:${m.nilai}%;background:${getNilaiColor(m.nilai)}" id="nbar-${i}"></div>
+    </div>
+  `).join('');
+  updateAvgNilai();
+}
+
+function getNilaiColor(v) {
+  v = parseInt(v);
+  if(v >= 85) return '#4CAF50';
+  if(v >= 70) return '#FFC107';
+  return '#F44336';
+}
+
+function updateNilai(idx, val, fromNum) {
+  val = Math.min(100, Math.max(0, parseInt(val)||0));
+  materi[idx].nilai = val;
+  const slider = document.querySelectorAll('.nilai-slider')[idx];
+  const numInput = document.querySelectorAll('.nilai-num')[idx];
+  slider.value = val;
+  slider.style.background = `linear-gradient(to right, ${getNilaiColor(val)} ${val}%, var(--border) ${val}%)`;
+  numInput.value = val;
+  document.getElementById('nbar-'+idx).style.width = val+'%';
+  document.getElementById('nbar-'+idx).style.background = getNilaiColor(val);
+  updateAvgNilai();
+}
+
+function updateAvgNilai() {
+  const avg = Math.round(materi.reduce((s,m)=>s+m.nilai,0)/materi.length);
+  document.getElementById('avg-nilai').textContent = avg;
+  const badge = document.getElementById('predikat-badge');
+  if(avg >= 90) { badge.textContent='Sangat Baik'; badge.className='predikat-badge sb'; }
+  else if(avg >= 75) { badge.textContent='Baik'; badge.className='predikat-badge b'; }
+  else if(avg >= 60) { badge.textContent='Cukup'; badge.className='predikat-badge c'; }
+  else { badge.textContent='Perlu Pembinaan'; badge.className='predikat-badge pb'; }
+}
+
+function cycleNilaiGenerus() {
+  nilaiIdx = (nilaiIdx+1) % GENERUS_DATA.length;
+  const g = GENERUS_DATA[nilaiIdx];
+  document.getElementById('nilai-ava').textContent = g.inisial;
+  document.getElementById('nilai-ava').style.background = g.warna;
+  document.getElementById('nilai-name').textContent = g.nama;
+  document.getElementById('nilai-id').textContent = `${g.id} • ${capitalize(g.golongan)}`;
+  showToast('👤 '+g.nama);
+}
+
+function saveNilai() {
+  showToast('✅ Nilai berhasil disimpan!');
+}
+
+// ============ RAPOR ============
+function initRapor() {
+  const container = document.getElementById('rapor-cards');
+  container.innerHTML = GENERUS_DATA.slice(0,4).map(g => {
+    const avg = Math.round(materi.reduce((s,m)=>s+m.nilai,0)/materi.length);
+    const hadir = Math.floor(18 + Math.random()*5);
+    const pct = Math.round(hadir/24*100);
+    return `
+    <div class="rapor-card">
+      <div class="rapor-header-row">
+        <div class="rapor-avatar" style="background:${g.warna}">${g.inisial}</div>
+        <div class="rapor-info">
+          <h3>${g.nama}</h3>
+          <p>${g.id}</p>
+          <span class="tag ${g.golongan}" style="margin-top:4px;display:inline-block">${capitalize(g.golongan)}</span>
+        </div>
+      </div>
+      <div class="rapor-nilai-row">
+        <div class="rapor-stat"><div class="rs-val">${avg}</div><div class="rs-lbl">Rata-rata Nilai</div></div>
+        <div class="rapor-stat"><div class="rs-val">${pct}%</div><div class="rs-lbl">Kehadiran</div></div>
+        <div class="rapor-stat"><div class="rs-val">${hadir}</div><div class="rs-lbl">Hadir</div></div>
+        <div class="rapor-stat"><div class="rs-val">${avg>=75?'Baik':'Cukup'}</div><div class="rs-lbl">Predikat</div></div>
+      </div>
+      <div class="nilai-detail">
+        ${materi.map(m=>`
+          <div class="nilai-row-item">
+            <span class="nm">${m.nama}</span>
+            <span class="nv" style="color:${getNilaiColor(m.nilai)}">${m.nilai}</span>
+          </div>
+        `).join('')}
+      </div>
+      <div class="kehadiran-bar-wrap">
+        <div class="keh-label"><span>Kehadiran</span><span>${hadir}/24 pertemuan</span></div>
+        <div class="keh-bar"><div class="keh-fill" style="width:${pct}%"></div></div>
+      </div>
+      <div class="rapor-actions">
+        <button class="rapor-btn primary" onclick="showToast('📥 Download rapor ${g.nama}...')">📥 Download</button>
+        <button class="rapor-btn outline" onclick="showToast('🖨 Cetak rapor ${g.nama}...')">🖨 Cetak</button>
+        <button class="rapor-btn outline" onclick="showToast('📤 Bagikan rapor ${g.nama}...')">📤 Bagikan</button>
+      </div>
+    </div>
+  `}).join('');
+}
+</script>
+</body>
+</html>
